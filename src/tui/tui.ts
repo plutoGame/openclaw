@@ -521,7 +521,10 @@ export async function runTui(opts: TuiOptions) {
   const root = new Container();
   root.addChild(header);
   root.addChild(chatLog);
+  const tokenBar = new Text("", 1, 0);
+
   root.addChild(statusContainer);
+  root.addChild(tokenBar);
   root.addChild(footer);
   root.addChild(editor);
 
@@ -578,6 +581,69 @@ export async function runTui(opts: TuiOptions) {
   const busyStates = new Set(["sending", "waiting", "streaming", "running"]);
   let statusText: Text | null = null;
   let statusLoader: Loader | null = null;
+
+  const renderTokenBar = (info: SessionInfo) => {
+    const { inputTokens, outputTokens, totalTokens, contextTokens } = info;
+
+    const digits = (n: number) => {
+      if (n >= 1e9) {
+        return `${(n / 1e9).toFixed(1)}B`;
+      }
+      if (n >= 1e6) {
+        return `${(n / 1e6).toFixed(1)}M`;
+      }
+      if (n >= 1e3) {
+        return `${(n / 1e3).toFixed(1)}k`;
+      }
+      return String(n);
+    };
+
+    const fmt = (n?: number | null) => (n != null && n > 0 ? digits(n) : "—");
+
+    // No token data = hide the bar
+    if (
+      totalTokens == null &&
+      inputTokens == null &&
+      outputTokens == null &&
+      contextTokens == null
+    ) {
+      tokenBar.setText("");
+      return;
+    }
+
+    const parts: string[] = [];
+
+    // Context window bar
+    if (contextTokens != null && contextTokens > 0) {
+      const barWidth = 16;
+      const pct = totalTokens != null ? Math.min(totalTokens / contextTokens, 1) : 0;
+      const filled = Math.round(pct * barWidth);
+      const empty = barWidth - filled;
+      const pctStr = ((pct * 100).toFixed(0) + "%").padStart(4);
+
+      const barColor = pct > 0.8 ? theme.error : pct > 0.5 ? theme.warning : theme.success;
+      parts.push(barColor(`${"█".repeat(filled)}${"░".repeat(empty)}`) + " " + theme.bold(pctStr));
+    }
+
+    // Token breakdown
+    const tokParts: string[] = [];
+    if (inputTokens != null && inputTokens > 0) {
+      tokParts.push(`in ${fmt(inputTokens)}`);
+    }
+    if (outputTokens != null && outputTokens > 0) {
+      tokParts.push(`out ${fmt(outputTokens)}`);
+    }
+    if (totalTokens != null && totalTokens > 0) {
+      tokParts.push(`total ${fmt(totalTokens)}`);
+    }
+
+    if (tokParts.length > 0) {
+      parts.push(theme.dim(tokParts.join(" · ")));
+    }
+
+    const line = " " + theme.dim("▊ Tok") + "  " + parts.join("  ");
+    tokenBar.setText(line);
+  };
 
   const formatElapsed = (startMs: number) => {
     const totalSeconds = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
@@ -766,6 +832,7 @@ export async function runTui(opts: TuiOptions) {
       tokens,
     ].filter(Boolean);
     footer.setText(theme.dim(footerParts.join(" | ")));
+    renderTokenBar(sessionInfo);
   };
 
   const { openOverlay, closeOverlay } = createOverlayHandlers(tui, editor);
