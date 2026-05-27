@@ -275,3 +275,40 @@ Skills own workflows; root owns hard policy and routing.
 - Local-only `.agents` ignores: `.git/info/exclude`, not repo `.gitignore`.
 - Provider tool schemas: prefer flat string enum helpers over `Type.Union([Type.Literal(...)])`; some providers reject `anyOf`.
 - External messaging: no token-delta channel messages. Follow `docs/concepts/streaming.md`.
+
+## Local Deployment (pluto9527)
+
+本地部署命令速查。
+
+```bash
+# 构建
+pnpm install && pnpm ui:build && pnpm build
+
+# 初始化/重新配置
+pnpm openclaw onboard --install-daemon
+
+# 日常运行
+pnpm openclaw status                   # 查看状态
+pnpm openclaw status --deep            # 深度诊断
+pnpm openclaw gateway --port 18789     # 手动启动
+tail -f ~/.openclaw/logs/gateway.log   # 查看日志
+
+# 配置
+pnpm openclaw configure --section channels   # 管理通道
+pnpm openclaw configure --section model      # 模型配置
+pnpm openclaw doctor --fix                   # 诊断修复
+
+# 安全
+pnpm openclaw security audit --deep          # 安全审计
+
+# 服务管理
+launchctl start ai.openclaw.gateway          # 启动
+launchctl stop ai.openclaw.gateway           # 停止
+launchctl list | grep openclaw               # 查进程
+```
+
+Dashboard: `http://127.0.0.1:18789/`  
+Config: `~/.openclaw/openclaw.json`  
+Workspace: `~/.openclaw/workspace/`  
+Sessions: `~/.openclaw/agents/main/sessions/`
+
