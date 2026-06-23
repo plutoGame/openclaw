@@ -1030,7 +1030,7 @@ export async function runTui(opts: RunTuiOptions): Promise<TuiResult> {
       const empty = barWidth - filled;
       const pctStr = ((pct * 100).toFixed(0) + "%").padStart(4);
 
-      const barColor = pct > 0.8 ? theme.error : pct > 0.5 ? theme.warning : theme.success;
+      const barColor = pct > 0.8 ? theme.error : pct > 0.5 ? theme.accent : theme.success;
       parts.push(barColor(`${"█".repeat(filled)}${"░".repeat(empty)}`) + " " + theme.bold(pctStr));
     }
 
